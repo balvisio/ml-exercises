@@ -1,4 +1,4 @@
-'''
+"""
 Standrard Cora Benchmark:
 - Citation network to classify papers into topics
 - 2708 nodes, 5429 edges
@@ -9,7 +9,9 @@ This codes implements:
 - sum-pooling
 - mean-pooling
 - GCN
-'''
+
+Link to video: https://www.youtube.com/watch?v=8owQBFAHw7E
+"""
 
 import numpy as np
 import tensorflow as tf
@@ -58,14 +60,14 @@ def masked_accuracy(logits, labels, mask):
 
 # This is the graph neural network layer
 def gnn(fts, adj, transform, activation): # node feature matrix, adjacency matrix
-    seq_fts = transform(fts) # The transform for this example is the matrix "W"
+    seq_fts = transform(fts) # The transform for this example is the matrix "W". This is the equivalent of the matrix "W" in slides
     ret_fts = tf.matmul(adj, seq_fts)
     return activation(ret_fts)
 
 # We create a 2-layer GNN
 # 'units' param is the number of dimensions in the latent space
 def train_cora(fts, adj, gnn_fn, units, epochs, lr):
-    lyr_1 = tf.keras.layers.Dense(units)
+    lyr_1 = tf.keras.layers.Dense(units) # Matrix W from slides
     lyr_2 = tf.keras.layers.Dense(7)
 
     def cora_gnn(fts, adj):
