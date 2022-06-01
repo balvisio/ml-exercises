@@ -1,5 +1,3 @@
-from socket import AddressFamily
-from tkinter import N
 """
 Link to Youtube video: https://www.youtube.com/watch?v=8Xt5fnLnduQ
 Code: https://github.com/danielegrattarola/spektral/blob/master/examples/graph_prediction/qm9_ecc.py
@@ -18,7 +16,7 @@ from spektral.layers import EdgeConditionedConv, ops, GlobalSumPool
 from spektral.utils import batch_iterator, label_to_one_hot, numpy_to_disjoint # For reference: https://graphneural.network/data-modes/
 
 learning_rate = 1e-3
-epochs = 10
+epochs = 100
 batch_size = 32
 
 A, X, E, y = qm9.load_data(return_type='numpy',
@@ -60,8 +58,8 @@ A_in = Input(shape=(None,), sparse=True, name="A_in")
 E_in = Input(shape=(S,), name="E_in")
 I_in = Input(shape=(), name="segment_ids_in", dtype=tf.int32)
 
-X_1 = EdgeConditionedConv(32, activation="relu")([X_in, A_in, E_in])
-X_2 = EdgeConditionedConv(32, activation="relu")([X_1, A_in, E_in])
+X_1 = EdgeConditionedConv(64, activation="relu")([X_in, A_in, E_in])
+X_2 = EdgeConditionedConv(64, activation="relu")([X_1, A_in, E_in])
 X_3 = GlobalSumPool()([X_2, I_in])
 output = Dense(n_out)(X_3)
 
@@ -128,6 +126,9 @@ for b in batches_test:
 
     predictions = model([X_, A_, E_, I_], training=False)
     model_loss += loss_fn(y_, predictions)
+
+    for yi, pred in zip(y_, predictions):
+        print(f"{yi} - {pred}")
 
 model_loss /= batches_in_epoch
 print(f"Done. Test loss: {model_loss}")
