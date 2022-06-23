@@ -29,6 +29,7 @@ class TransformerEncoder(layers.Layer):
         self.head_size_dim = head_size_dim
         self.dense_dim = dense_dim
         self.num_heads = num_heads
+        self.value_dim = value_dim
         self.key_value_seq_length = key_value_seq_length
         self.key_embedding_size = key_embedding_size
         self.value_embedding_size = value_embedding_size
@@ -74,8 +75,9 @@ class TransformerEncoder(layers.Layer):
         config = super().get_config()
         config.update({
             "head_size_dim": self.head_size_dim,
-            "num_heads": self.num_heads,
             "dense_dim": self.dense_dim,
+            "num_heads": self.num_heads,
+            "value_dim": self.value_dim,
             "key_value_seq_length": self.key_value_seq_length,
             "key_embedding_size": self.key_embedding_size,
             "value_embeddig_size": self.value_embedding_size,
