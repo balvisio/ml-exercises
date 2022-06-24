@@ -80,7 +80,7 @@ class TransformerEncoder(layers.Layer):
             "value_dim": self.value_dim,
             "key_value_seq_length": self.key_value_seq_length,
             "key_embedding_size": self.key_embedding_size,
-            "value_embeddig_size": self.value_embedding_size,
+            "value_embedding_size": self.value_embedding_size,
             "attn_output_shape": self.attn_output_shape,
         })
         return config
