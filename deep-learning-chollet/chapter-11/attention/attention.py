@@ -64,6 +64,15 @@ class TransformerEncoder(layers.Layer):
         if self.value_embedding_size:
             value = value[:, :, 0:self.value_embedding_size]
 
+        """
+        The output of the "MultiHeadAttention" Layer or (equivalently) input to the “Dense” layer is
+        a 3D matrix of dimensions (batch_size, query_sequence_length, word_embedding_size).
+        There is a note in the Keras documentation for the Dense layer on how
+        it handles tensors of rank greater than 2. (https://keras.io/api/layers/core_layers/dense/)
+        Basically, it flattens the tensor to make it 2D, computes the matrix product with the kernel
+        and then reshapes it back. In other words, it treats all dimensions except for the last one
+        as if they were batches.
+        """
         attention_output = self.attention(
             inputs, value, key=key, attention_mask=mask
         )
@@ -177,7 +186,7 @@ output_shape = 456
 This parameter is for the dimension of the Dense layers that come "after" and outside
 the "MultiHeadAttention" layer
 """
-dense_dim = 32
+dense_dim = 57
 value_dim = 188 # This is the size of the head of Value (V). Defaults to "key_dim/embed_dim"
 use_mask = False
 
@@ -207,6 +216,13 @@ x = TransformerEncoder(
     value_embedding_size,
     output_shape,
 )(x)
+"""
+The output of the "TransformerEncoder" is a 3D matrix of dimensions: (batch_size,
+query_sequence_length, word_embedding_size).
+Since TransformerEncoder returns full sequences, we need to reduce each sequence to a single vector
+for classification via a global pooling layer. From each 'word' in the sequence we take the maximum
+value along the embedding. The resulting matrix is of size: (batch_size, word_embedding).
+"""
 x = layers.GlobalMaxPooling1D()(x)
 x = layers.Dropout(0.5)(x)
 outputs = layers.Dense(1, activation="sigmoid")(x)
