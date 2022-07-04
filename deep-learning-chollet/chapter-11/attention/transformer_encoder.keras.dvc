@@ -1,0 +1,4 @@
+outs:
+- md5: c0d4721185c57d016633c0a8a91ff7b4
+  size: 75985136
+  path: transformer_encoder.keras

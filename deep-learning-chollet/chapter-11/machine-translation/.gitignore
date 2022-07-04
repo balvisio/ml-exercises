@@ -1,0 +1,4 @@
+/seq2seq_rnn.keras
+/source_vectorization.pkl
+/target_vectorization.pkl
+/test_pairs.json

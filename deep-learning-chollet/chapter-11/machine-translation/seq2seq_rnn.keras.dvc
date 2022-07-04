@@ -1,0 +1,4 @@
+outs:
+- md5: 06a7c86aca327fdcd1cd3577bed5dc14
+  size: 279028496
+  path: seq2seq_rnn.keras
