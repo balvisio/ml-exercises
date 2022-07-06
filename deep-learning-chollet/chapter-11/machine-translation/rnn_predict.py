@@ -17,10 +17,49 @@ def decode_sequence(
     tokenized_input_sentence = source_vectorization([input_sentence])
     decoded_sentence = "[start]"
     for i in range(max_decoded_sentence_length):
+        """
+        The "tokenized_target_sentence.shape" is (1, 21) == (1, sequence_length + 1)
+        Note that decoded_sentence is enclosed by [] to put it in "batch" format
+        In the first iteration of the loop, tokenized_target_sentence == [[2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]]
+        where 2 == [start]
+
+        The length of tokenized_target_sentence is determined by the parameters used when building
+        the "TextVectorization" layer. In "translation.py", the "target_vectorization" layer is
+        built with "output_sequence_length=sequence_length + 1" (== 20 + 1).
+
+        The length of "tokenized_target_sentence" are the number of "timesteps" that the RNN will
+        be executed; in this case, 21. Thus, given that the decoder RNN was built with
+        "return_sequences=True": the shape of 'next_token_predictions' is:
+        (batch_size, sequence_length + 1, vocab_size)
+        In out code example: (1, 21, 15000)
+
+        The output of the RNN layer contains a single vector per sample corresponding to the last
+        timestep. This vector contains information about the entire input sequence. The output shape
+        is (batch_size, units) where 'units' corresponds to the 'units' argument passed to the layer
+        constructor.
+        The RNN layer can last return the entire sequence of outputs of each sample when
+        'return_sequences=True'. The shape of the output is: (batch_sie, timesteps, units)
+
+        In our case, units=1024 and after the Dense layer of 'vocab_size' size the output of the
+        entire model is (1, 21, 15000)
+        """
         tokenized_target_sentence = target_vectorization([decoded_sentence])
+
+        """
+        Note that this inference setup, while very simple, is rather inefficient, since we reprocess
+        the entire source sentence and the entire generated target sentence every time we sample a
+        new word. In a practical application, you'd factor the encoder and the decoder as two
+        separate models, and your decoder would only run a single step at each token-sampling
+        iteration, reusing its previous internal state.
+        """
         next_token_predictions = model.predict(
             [tokenized_input_sentence, tokenized_target_sentence]
         )
+
+        """
+        The output shape is (batch_size, timesteps, vocab_size) == (1, 21, 15000) so here we take
+        the max prob in the vocab_size axis at each time step 'i'.
+        """
         sampled_token_index = np.argmax(next_token_predictions[0, i, :])
         sampled_token = spa_index_lookup[sampled_token_index]
         decoded_sentence += " " + sampled_token

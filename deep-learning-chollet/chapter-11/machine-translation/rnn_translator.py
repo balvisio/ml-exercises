@@ -13,11 +13,12 @@ def get_model(vocab_size):
     source = keras.Input(shape=(None,), dtype="int64", name="english")
     x = layers.Embedding(vocab_size, embed_dim, mask_zero=True)(source)
     encoded_source = layers.Bidirectional(
-        layers.GRU(latent_dim), merge_mode="sum")(x)
+        layers.GRU(latent_dim, name="encoder"), merge_mode="sum", name="bi_encoder")(x)
 
     past_target = keras.Input(shape=(None,), dtype="int64", name="spanish")
     x = layers.Embedding(vocab_size, embed_dim, mask_zero=True)(past_target)
-    decoder_gru = layers.GRU(latent_dim, return_sequences=True)
+    # Note that the decoder is built with return_sequences=True
+    decoder_gru = layers.GRU(latent_dim, return_sequences=True, name="decoder")
     x = decoder_gru(x, initial_state=encoded_source)
     x = layers.Dropout(0.5)(x)
     target_next_step = layers.Dense(vocab_size, activation="softmax")(x)
@@ -59,6 +60,8 @@ if __name__ == "__main__":
     val_ds = translation.make_dataset(val_pairs, source_vectorization, target_vectorization)
 
     model = get_model(vocab_size)
+
+    print(model.summary())
 
     model.compile(
         optimizer="rmsprop",
