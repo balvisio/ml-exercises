@@ -1,0 +1,5 @@
+outs:
+- md5: dcb21eea1a563dc51ac51c4ba31fa102.dir
+  size: 157947014
+  nfiles: 3
+  path: int_test_ds
