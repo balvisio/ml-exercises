@@ -11,6 +11,9 @@ def get_causal_attention_mask(inputs):
     j = tf.range(sequence_length)
     print(f"j shape: {j.shape}")
     print(j)
+    """
+    tf.cast casts a tensor to a new type.
+    """
     mask = tf.cast(i >= j, dtype = "int32")
     print(f"Mask shape: {mask.shape}")
     print(mask)
@@ -22,6 +25,12 @@ def get_causal_attention_mask(inputs):
         tf.constant([1, 1], dtype=tf.int32)], axis=0)
     print(tf.expand_dims(batch_size, -1))
     print(f"Mult: {mult}")
+    """
+    tf.tile creates a new tensor by replicating input multiples times.
+    tf.tile(
+        input, multiples, name=None
+    )
+    """
     res = tf.tile(mask, mult)
     print(res)
     
