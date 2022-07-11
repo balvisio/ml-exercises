@@ -10,10 +10,10 @@ class TransformerEncoder(layers.Layer):
         dense_dim,
         num_heads,
         value_dim,
+        attn_output_shape,
         key_value_seq_length=None,
         key_embedding_size=None,
         value_embedding_size=None,
-        attn_output_shape=None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
