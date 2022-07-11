@@ -1,9 +1,16 @@
+import sys
+
 import json
 import pickle
 from tensorflow import keras
 from tensorflow.keras import layers
 
-import translation
+from pathlib import Path
+file = Path(__file__).resolve()
+package_root_directory = file.parents[2]
+sys.path.append(str(package_root_directory))
+
+from machine_translation import dataset
 
 
 def get_model(vocab_size):
@@ -27,10 +34,10 @@ def get_model(vocab_size):
     return seq2seq_rnn
 
 
-if __name__ == "__main__":
+def main():
     vocab_size = 15000
-    train_pairs, val_pairs, test_pairs = translation.create_text_pairs()
-    source_vectorization, target_vectorization = translation.create_text_vectorization(
+    train_pairs, val_pairs, test_pairs = dataset.create_text_pairs()
+    source_vectorization, target_vectorization = dataset.create_text_vectorization(
         train_pairs,
         vocab_size
     )
@@ -56,12 +63,12 @@ if __name__ == "__main__":
     with open("test_pairs.json", "w") as f:
         json.dump(test_pairs, f)
 
-    train_ds = translation.make_dataset(train_pairs, source_vectorization, target_vectorization)
-    val_ds = translation.make_dataset(val_pairs, source_vectorization, target_vectorization)
+    train_ds = dataset.make_dataset(train_pairs, source_vectorization, target_vectorization)
+    val_ds = dataset.make_dataset(val_pairs, source_vectorization, target_vectorization)
 
     model = get_model(vocab_size)
 
-    print(model.summary())
+    model.summary()
 
     model.compile(
         optimizer="rmsprop",
@@ -77,6 +84,10 @@ if __name__ == "__main__":
     ]
 
     model.fit(train_ds, epochs=15, validation_data=val_ds, callbacks=callbacks)
+
+
+if __name__ == "__main__":
+    main()
 
 
 """

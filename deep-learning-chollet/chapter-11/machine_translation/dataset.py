@@ -3,6 +3,7 @@ This code is to prepare a Dataset for an English-to-Spanish translator model.
 
 The dataset was downloaded from http://storage.googleapis.com/download.tensorflow.org/data/spa-eng.zip
 """
+import pathlib
 import random
 import tensorflow as tf
 from tensorflow.keras import layers
@@ -15,7 +16,7 @@ strip_chars = strip_chars.replace("]", "")
 
 
 def create_text_pairs():
-    text_file ="/Users/balvisio/spa-eng/spa.txt"
+    text_file = pathlib.Path.home() / "spa-eng/spa.txt"
 
     with open(text_file) as f:
         lines = f.read().split("\n")[:-1]
