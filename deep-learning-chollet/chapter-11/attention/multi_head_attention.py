@@ -457,12 +457,12 @@ class MultiHeadAttention(Layer):
       # (<batch_dims>, num_heads, <query_attention_dims, key_attention_dims>)
       mask_expansion_axis = -len(self._attention_axes) * 2 - 1
       print(f"Mask expansion axis: {mask_expansion_axis}")
-      for i in range(len(attention_scores.shape) - len(attention_mask.shape)):
-        print(i)
+      for _ in range(len(attention_scores.shape) - len(attention_mask.shape)):
         attention_mask = tf.expand_dims(
             attention_mask, axis=mask_expansion_axis)
-    if attention_mask:
       print(f"Attention mask shape: {attention_mask.shape}")
+    else:
+      print("Attention mask is None")
     return self._softmax(attention_scores, attention_mask)
 
   def _compute_attention(self,
@@ -490,6 +490,7 @@ class MultiHeadAttention(Layer):
       attention_output: Multi-headed outputs of attention computation.
       attention_scores: Multi-headed attention weights.
     """
+    print(f"Value shape: {value.shape}")
     # Note: Applying scalar multiply at the smaller end of einsum improves
     # XLA performance, but may introduce slight numeric differences in
     # the Transformer attention head.
@@ -500,6 +501,7 @@ class MultiHeadAttention(Layer):
     attention_scores = tf.einsum(self._dot_product_equation, key,
                                                query)
 
+    print(f"Attention Scores shape: {attention_scores.shape}")
     attention_scores = self._masked_softmax(attention_scores, attention_mask)
 
     # This is actually dropping out entire tokens to attend to, which might
@@ -508,9 +510,6 @@ class MultiHeadAttention(Layer):
         attention_scores, training=training)
 
     # `context_layer` = [B, T, N, H]
-    print(f"Attention Scores shape: {attention_scores.shape}")
-    print(f"Value shape: {value.shape}")
-
     attention_output = tf.einsum(self._combine_equation,
                                                attention_scores_dropout, value)
 
