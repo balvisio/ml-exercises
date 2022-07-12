@@ -1,9 +1,16 @@
+import sys
+
 import json
 import numpy as np
 import pickle
 import random
 from tensorflow import keras
 from tensorflow.keras import layers
+
+from pathlib import Path
+file = Path(__file__).resolve()
+package_root_directory = file.parents[2]
+sys.path.append(str(package_root_directory))
 
 
 def decode_sequence(
