@@ -37,8 +37,8 @@ def decode_sequence(
         timestep. This vector contains information about the entire input sequence. The output shape
         is (batch_size, units) where 'units' corresponds to the 'units' argument passed to the layer
         constructor.
-        The RNN layer can last return the entire sequence of outputs of each sample when
-        'return_sequences=True'. The shape of the output is: (batch_sie, timesteps, units)
+        The RNN layer can return the entire sequence of outputs of each sample when
+        'return_sequences=True'. The shape of the output is: (batch_size, timesteps, units)
 
         In our case, units=1024 and after the Dense layer of 'vocab_size' size the output of the
         entire model is (1, 21, 15000)
