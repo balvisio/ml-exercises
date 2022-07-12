@@ -43,19 +43,17 @@ def custom_standarization(input_string):
     return tf.strings.regex_replace(lowercase, f"[{re.escape(strip_chars)}]", "")
 
 
-def create_text_vectorization(pairs, vocab_size):
-    sequence_length = 20
-
+def create_text_vectorization(pairs, vocab_size, output_sequence_length):
     source_vectorization = layers.TextVectorization(
         max_tokens=vocab_size,
         output_mode="int",
-        output_sequence_length=sequence_length,
+        output_sequence_length=output_sequence_length,
     )
 
     target_vectorization = layers.TextVectorization(
         max_tokens=vocab_size,
         output_mode="int",
-        output_sequence_length=sequence_length + 1,
+        output_sequence_length=output_sequence_length + 1,
         standardize=custom_standarization,
     )
 
@@ -104,8 +102,13 @@ def make_dataset(pairs, source_vectorization, target_vectorization):
 
 if __name__ == "__main__":
     vocab_size = 15000
+    output_sequence_length = 20
     train_pairs, val_pairs, test_pairs = create_text_pairs()
-    source_vectorization, target_vectorization = create_text_vectorization(train_pairs, vocab_size)
+    source_vectorization, target_vectorization = create_text_vectorization(
+        train_pairs,
+        vocab_size,
+        output_sequence_length,
+    )
 
     train_ds = make_dataset(train_pairs, source_vectorization, target_vectorization)
     val_ds = make_dataset(val_pairs, source_vectorization, target_vectorization)

@@ -36,10 +36,12 @@ def get_model(vocab_size):
 
 def main():
     vocab_size = 15000
+    output_sequence_length = 20
     train_pairs, val_pairs, test_pairs = dataset.create_text_pairs()
     source_vectorization, target_vectorization = dataset.create_text_vectorization(
         train_pairs,
-        vocab_size
+        vocab_size,
+        output_sequence_length,
     )
 
     # Save source and target vectorization layers so that they can be used during inference

@@ -56,7 +56,7 @@ def main():
     """
     "max_sequence_length" is equivalent to the query sequence length
     """
-    max_sequence_length = 789
+    max_sequence_length = 20
 
     """
     "key_value_seq_length" is optional parameter to the encoder is to showcase that the sequence length
@@ -109,7 +109,8 @@ def main():
     train_pairs, val_pairs, test_pairs = dataset.create_text_pairs()
     source_vectorization, target_vectorization = dataset.create_text_vectorization(
         train_pairs,
-        vocab_size
+        vocab_size,
+        max_sequence_length,
     )
 
     # Save source and target vectorization layers so that they can be used during inference
