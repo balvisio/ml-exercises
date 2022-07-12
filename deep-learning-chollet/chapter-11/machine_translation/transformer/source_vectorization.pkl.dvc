@@ -1,0 +1,4 @@
+outs:
+- md5: 418ad8e92eec53b639b68b2abe9dce26
+  size: 122006
+  path: source_vectorization.pkl

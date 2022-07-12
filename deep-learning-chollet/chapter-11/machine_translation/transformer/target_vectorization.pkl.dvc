@@ -1,0 +1,4 @@
+outs:
+- md5: 379f33de848da043cd61642404c3518b
+  size: 219874
+  path: target_vectorization.pkl
