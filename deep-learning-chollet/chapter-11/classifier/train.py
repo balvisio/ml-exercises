@@ -7,6 +7,7 @@ The code has been annotatated and modified to be more clear and more flexible.
 
 import os, pathlib, shutil, random, sys
 
+import pickle
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -61,7 +62,7 @@ def create_ds():
     return train_ds, val_ds, test_ds
 
 
-def create_int_ds(train_ds, val_ds, test_ds, max_sequence_length, vocab_size):
+def create_text_vectorization(train_ds, max_sequence_length, vocab_size):
     text_vectorization = layers.TextVectorization(
         max_tokens=vocab_size,
         output_mode="int",
@@ -75,6 +76,11 @@ def create_int_ds(train_ds, val_ds, test_ds, max_sequence_length, vocab_size):
     At the end of adapt(), if max_tokens is set, the vocabulary wil be truncated to max_tokens size.
     """
     text_vectorization.adapt(text_only_train_ds)
+
+    return text_vectorization
+
+
+def create_int_ds(text_vectorization, train_ds, val_ds, test_ds):
     int_train_ds = train_ds.map(
         lambda x, y: (text_vectorization(x), y), num_parallel_calls=4)
     """
@@ -88,129 +94,139 @@ def create_int_ds(train_ds, val_ds, test_ds, max_sequence_length, vocab_size):
 
     return int_train_ds, int_val_ds, int_test_ds
 
-"""
-"key_value_seq_length" is optional parameter to the encoder is to showcase that the sequence length
-of the query doesn't necessarily need to be equal to the query sequence length.
 
-HOWEVER, when doing self-attention and passing a mask, the mask should be of size
-(batch_size, query_seq_length, key_seq_length). The "Embeding" and "PositionalEmbedding" layers
-generate a mask of size (batch_size, query_seq_length) and inside the "TransformerEncoder" layer
-the mask is transformed by adding an extra axis to (batch_size, 1, query_seq_length). The implicit
-assumption is that the key and query sequence length need to be the same. This is a reasonable
-assumption when doing self-attention since each element of the sequence is a word and the objective
-is to compute how much "attention" a word should pay to each of the other words.
+if __name__ == "__main__":
+    """
+    "key_value_seq_length" is optional parameter to the encoder is to showcase that the sequence length
+    of the query doesn't necessarily need to be equal to the query sequence length.
 
-This mask is then broadcasted to be a tensor of shape (batch_size, query_seq_length,
-key_seq_length). Thus, for masking to work "max_sequence_length (query_seq_length)" has to be equal
-to "key_value_seq_length (query_seq_length)"
+    HOWEVER, when doing self-attention and passing a mask, the mask should be of size
+    (batch_size, query_seq_length, key_seq_length). The "Embeding" and "PositionalEmbedding" layers
+    generate a mask of size (batch_size, query_seq_length) and inside the "TransformerEncoder" layer
+    the mask is transformed by adding an extra axis to (batch_size, 1, query_seq_length). The implicit
+    assumption is that the key and query sequence length need to be the same. This is a reasonable
+    assumption when doing self-attention since each element of the sequence is a word and the objective
+    is to compute how much "attention" a word should pay to each of the other words.
 
-Another option would be to do more manipulation of the mask tensor inside the TransformerEncoder
-layer.
+    This mask is then broadcasted to be a tensor of shape (batch_size, query_seq_length,
+    key_seq_length). Thus, for masking to work "max_sequence_length (query_seq_length)" has to be equal
+    to "key_value_seq_length (query_seq_length)"
 
-For more info see OneNote:NLP:Attention
-"""
-key_value_seq_length = 789
+    Another option would be to do more manipulation of the mask tensor inside the TransformerEncoder
+    layer.
 
-vocab_size = 20000
+    For more info see OneNote:NLP:Attention
+    """
+    key_value_seq_length = 789
 
-train_ds, val_ds, test_ds = create_ds()
-int_train_ds, int_val_ds, int_test_ds = create_int_ds(
+    vocab_size = 20000
+
+    train_ds, val_ds, test_ds = create_ds()
+    text_vectorization = create_text_vectorization(train_ds, max_sequence_length, vocab_size)
+    pickle.dump(
+        {
+            "config": text_vectorization.get_config(),
+            "weights": text_vectorization.get_weights(),
+        },
+        open("text_vectorization.pkl", "wb"),
+    )
+
+    int_train_ds, int_val_ds, int_test_ds = create_int_ds(
+    text_vectorization,
     train_ds,
     val_ds,
     test_ds,
-    max_sequence_length,
-    vocab_size,
-)
-tf.data.experimental.save(int_test_ds, "int_test_ds")
-
-"""
-Originally called "embed_dim", the "head_size_dim" translates to the "key_dim" of the
-"MultiHeadAttention" and it represents the size of each attention head for query and key
-"""
-head_size_dim = 97
-num_heads = 2
-
-"""
-"word_embed_dim" is the size of the embedding for the Embedding layer.
-"output_shape" defines the size the output dimension of the "MultiHeadAttention" layer. Technically,
-this parameter doesn't need to be equal to "word_embed_dim" but if not, the "TransformerEncoder"
-will give an error when it tries to do the layer 1 normalization
-"""
-word_embed_dim = 456
-output_shape = 456
-
-"""
-This parameter is for the dimension of the Dense layers that come "after" and outside
-the "MultiHeadAttention" layer
-"""
-dense_dim = 57
-value_dim = 188 # This is the size of the head of Value (V). Defaults to "key_dim/embed_dim"
-use_mask = False
-
-"""
-These optional parameters to the encoder are to showcase that technically the embedding dimensions
-of the K, Q, V can be all different. The matrices multiplications work because remember that the
-K, Q, V input matrices go through the inner dense blocks before the attention is computed.
-"""
-key_embedding_size = 131
-value_embedding_size = 132
-
-use_positional_embedding = True
-
-inputs = keras.Input(shape=(None,), dtype="int64")
-
-"""
-The author first implements the model with the "Embedding" layer without
-masking (mask_zero=defaults to False). This is an oversimplification since the "TransformerEncoder"
-layer should take a "padding mask" to ignore padding. This mask is automatically generated by the
-PositionalEmbedding layer.
-
-For more info see OneNote:NLP:Attention
-"""
-if use_positional_embedding:
-    x = PositionalEmbedding(max_sequence_length, vocab_size, word_embed_dim)(inputs)
-else:
-    x = layers.Embedding(vocab_size, word_embed_dim, mask_zero=use_mask)(inputs)
-x = TransformerEncoder(
-    head_size_dim,
-    dense_dim,
-    num_heads,
-    value_dim,
-    output_shape,
-    key_value_seq_length,
-    key_embedding_size,
-    value_embedding_size,
-)(x)
-
-"""
-The output of the "TransformerEncoder" is a 3D matrix of dimensions: (batch_size,
-query_sequence_length, word_embedding_size).
-Since TransformerEncoder returns full sequences, we need to reduce each sequence to a single vector
-for classification via a global pooling layer. From each 'word' in the sequence we take the maximum
-value along the embedding. The resulting matrix is of size: (batch_size, word_embedding).
-"""
-x = layers.GlobalMaxPooling1D()(x)
-x = layers.Dropout(0.5)(x)
-outputs = layers.Dense(1, activation="sigmoid")(x)
-model = keras.Model(inputs, outputs)
-model.compile(
-    optimizer="rmsprop",
-    loss="binary_crossentropy",
-    metrics=["accuracy"],
-    run_eagerly=True,
     )
-model.summary()
+    tf.data.experimental.save(int_test_ds, "int_test_ds")
 
-callbacks = [
-    keras.callbacks.ModelCheckpoint(
-        "transformer_encoder.keras",
-        save_best_only=True,
+    """
+    Originally called "embed_dim", the "head_size_dim" translates to the "key_dim" of the
+    "MultiHeadAttention" and it represents the size of each attention head for query and key
+    """
+    head_size_dim = 97
+    num_heads = 2
+
+    """
+    "word_embed_dim" is the size of the embedding for the Embedding layer.
+    "output_shape" defines the size the output dimension of the "MultiHeadAttention" layer. Technically,
+    this parameter doesn't need to be equal to "word_embed_dim" but if not, the "TransformerEncoder"
+    will give an error when it tries to do the layer 1 normalization
+    """
+    word_embed_dim = 456
+    output_shape = 456
+
+    """
+    This parameter is for the dimension of the Dense layers that come "after" and outside
+    the "MultiHeadAttention" layer
+    """
+    dense_dim = 57
+    value_dim = 188 # This is the size of the head of Value (V). Defaults to "key_dim/embed_dim"
+    use_mask = False
+
+    """
+    These optional parameters to the encoder are to showcase that technically the embedding dimensions
+    of the K, Q, V can be all different. The matrices multiplications work because remember that the
+    K, Q, V input matrices go through the inner dense blocks before the attention is computed.
+    """
+    key_embedding_size = 131
+    value_embedding_size = 132
+
+    use_positional_embedding = True
+
+    inputs = keras.Input(shape=(None,), dtype="int64")
+
+    """
+    The author first implements the model with the "Embedding" layer without
+    masking (mask_zero=defaults to False). This is an oversimplification since the "TransformerEncoder"
+    layer should take a "padding mask" to ignore padding. This mask is automatically generated by the
+    PositionalEmbedding layer.
+
+    For more info see OneNote:NLP:Attention
+    """
+    if use_positional_embedding:
+        x = PositionalEmbedding(max_sequence_length, vocab_size, word_embed_dim)(inputs)
+    else:
+        x = layers.Embedding(vocab_size, word_embed_dim, mask_zero=use_mask)(inputs)
+    x = TransformerEncoder(
+        head_size_dim,
+        dense_dim,
+        num_heads,
+        value_dim,
+        output_shape,
+        key_value_seq_length,
+        key_embedding_size,
+        value_embedding_size,
+    )(x)
+
+    """
+    The output of the "TransformerEncoder" is a 3D matrix of dimensions: (batch_size,
+    query_sequence_length, word_embedding_size).
+    Since TransformerEncoder returns full sequences, we need to reduce each sequence to a single vector
+    for classification via a global pooling layer. From each 'word' in the sequence we take the maximum
+    value along the embedding. The resulting matrix is of size: (batch_size, word_embedding).
+    """
+    x = layers.GlobalMaxPooling1D()(x)
+    x = layers.Dropout(0.5)(x)
+    outputs = layers.Dense(1, activation="sigmoid")(x)
+    model = keras.Model(inputs, outputs)
+    model.compile(
+        optimizer="rmsprop",
+        loss="binary_crossentropy",
+        metrics=["accuracy"],
+        run_eagerly=True,
     )
-]
+    model.summary()
 
-model.fit(
-    int_train_ds,
-    validation_data=int_val_ds,
-    epochs=20,
-    callbacks=callbacks,
-)
+    callbacks = [
+        keras.callbacks.ModelCheckpoint(
+            "transformer_encoder.keras",
+            save_best_only=True,
+        )
+    ]
+
+    model.fit(
+        int_train_ds,
+        validation_data=int_val_ds,
+        epochs=20,
+        callbacks=callbacks,
+    )

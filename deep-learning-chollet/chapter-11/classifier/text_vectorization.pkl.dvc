@@ -1,0 +1,4 @@
+outs:
+- md5: 6b5cc27dac1148fac88ca57d7a69d98e
+  size: 200583
+  path: text_vectorization.pkl
