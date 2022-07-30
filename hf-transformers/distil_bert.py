@@ -1,4 +1,5 @@
 import tensorflow as tf
+import transformers
 from transformers import TFDistilBertModel, AutoTokenizer
 
 
@@ -75,3 +76,28 @@ print(output[2][0].shape)
 Shape of attentions is (batch_size, num_heads, sequence_length, sequence_length).
 In our case: (1, 12, 29, 29)
 """
+
+"""
+The following code is just to showcase how the model fails if we pass a sequence long than 512.
+
+This is because distil-bert was built with a positional embedding layer of maximum size 512.
+This can be seen in the param "max_position_embeddings" of its config:
+https://huggingface.co/distilbert-base-cased/blob/main/config.json
+
+If we pass a sequence longer than 512 the embedding layer cannot handle anything equal or greater
+than 512. Error:
+
+indices[0,512] = 512 is not in [0, 512) [Op:ResourceGather]
+
+Call arguments received by layer "embeddings" (type TFEmbeddings):
+  • input_ids=tf.Tensor(shape=(1, 513), dtype=int32)
+"""
+inputs = tokenizer(sequence, return_tensors="tf", padding=True)
+
+my_dict = {
+    "input_ids": tf.constant(1, shape=(1,513), name='Const'),
+    "attention_mask": tf.constant(1, shape=(1,513), name='Const'),
+}
+
+inputs = transformers.tokenization_utils_base.BatchEncoding(my_dict)
+output = model(**inputs)
